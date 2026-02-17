@@ -8,19 +8,35 @@ use App\Models\PurchaseOrder;
 use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\Warehouse;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    private function getDirectorySize(string $path): int
+    private function getDirectorySize(string $path, array $exclude = []): int
     {
         $size = 0;
         if (!is_dir($path)) return $size;
 
-        foreach (File::allFiles($path) as $file) {
-            $size += $file->getSize();
+        $iterator = new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS);
+
+        if (!empty($exclude)) {
+            $iterator = new \RecursiveCallbackFilterIterator($iterator, function ($current, $key, $iterator) use ($exclude) {
+                if ($current->isDir() && in_array($current->getFilename(), $exclude)) {
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        $files = new \RecursiveIteratorIterator($iterator, \RecursiveIteratorIterator::LEAVES_ONLY);
+
+        foreach ($files as $file) {
+            if ($file->isFile()) {
+                $size += $file->getSize();
+            }
         }
 
         return $size;
@@ -44,7 +60,7 @@ class DashboardController extends Controller
 
     private function getStorageUsage(): array
     {
-        $appSize = $this->getDirectorySize(storage_path('app'));
+        $appSize = $this->getDirectorySize(base_path(), ['vendor', 'node_modules', '.git']);
         $dbSize = $this->getDatabaseSize();
         $totalUsed = $appSize + $dbSize;
 
@@ -62,6 +78,24 @@ class DashboardController extends Controller
             'capacity_mb' => $capacityMb,
             'percentage' => min($percentage, 100),
         ];
+    }
+
+    public function cleanCache()
+    {
+        // Clear Laravel caches
+        Artisan::call('cache:clear');
+        Artisan::call('view:clear');
+
+        // Delete log files
+        $logPath = storage_path('logs');
+        if (is_dir($logPath)) {
+            $logFiles = File::glob($logPath . '/*.log');
+            foreach ($logFiles as $file) {
+                File::delete($file);
+            }
+        }
+
+        return back()->with('success', 'flash_cache_cleaned');
     }
 
     public function index()

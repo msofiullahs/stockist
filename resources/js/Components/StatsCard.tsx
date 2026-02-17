@@ -4,13 +4,19 @@ interface StatsCardProps {
     title: string;
     value: string | number;
     icon: ReactNode;
+    variant?: 'default' | 'error';
     trend?: {
         value: string;
         positive: boolean;
     };
 }
 
-export default function StatsCard({ title, value, icon, trend }: StatsCardProps) {
+const iconStyles = {
+    default: 'bg-brand-500/10 text-brand-500 dark:bg-brand-500/20',
+    error: 'bg-error-500/10 text-error-500 dark:bg-error-500/20',
+};
+
+export default function StatsCard({ title, value, icon, variant = 'default', trend }: StatsCardProps) {
     return (
         <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
             <div className="flex items-center justify-between">
@@ -36,7 +42,7 @@ export default function StatsCard({ title, value, icon, trend }: StatsCardProps)
                         </p>
                     )}
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-500/10 text-brand-500 dark:bg-brand-500/20">
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${iconStyles[variant]}`}>
                     {icon}
                 </div>
             </div>

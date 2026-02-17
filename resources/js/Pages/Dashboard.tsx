@@ -1,9 +1,10 @@
-import { Head, Link, usePage } from '@inertiajs/react';
-import { lazy, Suspense } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { lazy, Suspense, useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageHeader from '@/Components/PageHeader';
 import StatsCard from '@/Components/StatsCard';
 import Badge from '@/Components/Badge';
+import ConfirmModal from '@/Components/ConfirmModal';
 import { DashboardStats, Product, StockMovement, StorageUsage, PageProps } from '@/types';
 import { useTranslation } from '@/utils/translation';
 
@@ -35,6 +36,22 @@ export default function Dashboard({
     const { settings } = usePage<PageProps>().props;
     const isDark = settings?.theme === 'dark';
 
+    const [showCleanModal, setShowCleanModal] = useState(false);
+    const [cleanProcessing, setCleanProcessing] = useState(false);
+
+    const handleCleanCache = () => {
+        setCleanProcessing(true);
+        router.post('/dashboard/clean-cache', {}, {
+            onSuccess: () => {
+                setShowCleanModal(false);
+                setCleanProcessing(false);
+            },
+            onError: () => {
+                setCleanProcessing(false);
+            },
+        });
+    };
+
     const chartOptions: ApexCharts.ApexOptions = {
         chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'inherit', background: 'transparent' },
         colors: ['#3366FF', '#EF4444'],
@@ -59,7 +76,7 @@ export default function Dashboard({
     ];
 
     const storagePercentage = storageUsage?.percentage ?? 0;
-    const storageColor = storagePercentage >= 90 ? '#EF4444' : storagePercentage >= 70 ? '#F59E0B' : '#3366FF';
+    const storageColor = storagePercentage >= 80 ? '#EF4444' : storagePercentage >= 60 ? '#F59E0B' : '#3366FF';
 
     const storageChartOptions: ApexCharts.ApexOptions = {
         chart: { type: 'radialBar', background: 'transparent' },
@@ -153,6 +170,7 @@ export default function Dashboard({
                 <StatsCard
                     title={t('low_stock_alerts')}
                     value={stats.lowStockCount}
+                    variant={stats.lowStockCount > 0 ? 'error' : 'default'}
                     icon={
                         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -184,7 +202,20 @@ export default function Dashboard({
                 {/* Storage Usage */}
                 {storageUsage && (
                     <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
-                        <h3 className="mb-2 text-base font-semibold text-gray-900 dark:text-gray-100">{t('storage_usage')}</h3>
+                        <div className="mb-2 flex items-center justify-between">
+                            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{t('storage_usage')}</h3>
+                            <button
+                                type="button"
+                                onClick={() => setShowCleanModal(true)}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                                title={t('clean_cache_logs')}
+                            >
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                {t('clean')}
+                            </button>
+                        </div>
                         <Suspense fallback={<div className="flex h-48 items-center justify-center text-sm text-gray-400 dark:text-gray-500">{t('loading_chart')}</div>}>
                             <Chart
                                 options={storageChartOptions}
@@ -296,6 +327,16 @@ export default function Dashboard({
                     </div>
                 )}
             </div>
+            <ConfirmModal
+                show={showCleanModal}
+                onClose={() => setShowCleanModal(false)}
+                onConfirm={handleCleanCache}
+                title={t('clean_cache_logs')}
+                message={t('clean_cache_logs_confirm')}
+                confirmLabel={t('clean')}
+                variant="warning"
+                processing={cleanProcessing}
+            />
         </AuthenticatedLayout>
     );
 }

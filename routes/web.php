@@ -27,6 +27,7 @@ Route::redirect('/', '/dashboard');
 // Authenticated routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/dashboard/clean-cache', [DashboardController::class, 'cleanCache'])->name('dashboard.clean-cache');
 
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
