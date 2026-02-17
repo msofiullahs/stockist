@@ -22,3 +22,7 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Only keep English translations in repo
+/lang/*
+!/lang/en.json

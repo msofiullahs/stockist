@@ -24,6 +24,15 @@ class SettingsController extends Controller
             'theme' => ['required', 'in:light,dark'],
             'languages' => ['nullable', 'string'],
             'locale' => ['nullable', 'string', 'max:10'],
+            'mail_enabled' => ['required', 'in:0,1'],
+            'mail_mailer' => ['nullable', 'string', 'in:smtp,sendmail,log'],
+            'mail_host' => ['nullable', 'string', 'max:255'],
+            'mail_port' => ['nullable', 'string', 'max:10'],
+            'mail_username' => ['nullable', 'string', 'max:255'],
+            'mail_password' => ['nullable', 'string', 'max:255'],
+            'mail_encryption' => ['nullable', 'string', 'in:tls,ssl,none'],
+            'mail_from_address' => ['nullable', 'email', 'max:255'],
+            'mail_from_name' => ['nullable', 'string', 'max:255'],
         ]);
 
         foreach ($validated as $key => $value) {

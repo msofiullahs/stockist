@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ImportController;
 use App\Http\Controllers\Stock\CategoryController;
 use App\Http\Controllers\Stock\ProductController;
 use App\Http\Controllers\Stock\SupplierController;
@@ -55,6 +56,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/exports/stock/excel', [ReportController::class, 'exportStockExcel'])->name('exports.stock.excel');
     Route::get('/exports/movements/pdf', [ReportController::class, 'exportMovementPdf'])->name('exports.movements.pdf');
     Route::get('/exports/movements/excel', [ReportController::class, 'exportMovementExcel'])->name('exports.movements.excel');
+
+    // Imports
+    Route::post('/import/{type}', [ImportController::class, 'import'])->name('import');
+    Route::get('/import/{type}/template', [ImportController::class, 'template'])->name('import.template');
 
     // Settings & User Management (admin only)
     Route::middleware(['role:admin'])->group(function () {

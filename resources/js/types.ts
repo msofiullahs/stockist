@@ -14,6 +14,15 @@ export interface AppSettings {
     theme: 'light' | 'dark';
     languages: string;
     locale: string;
+    mail_enabled: string;
+    mail_mailer: string;
+    mail_host: string;
+    mail_port: string;
+    mail_username: string;
+    mail_password: string;
+    mail_encryption: string;
+    mail_from_address: string;
+    mail_from_name: string;
 }
 
 export interface Language {
@@ -155,4 +164,13 @@ export interface DashboardStats {
     totalWarehouses: number;
     pendingOrders: number;
     lowStockCount: number;
+}
+
+export interface StorageUsage {
+    app_size: number;
+    db_size: number;
+    total_used: number;
+    capacity: number;
+    capacity_mb: number;
+    percentage: number;
 }

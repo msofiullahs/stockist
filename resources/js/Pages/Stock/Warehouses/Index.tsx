@@ -7,6 +7,7 @@ import Pagination from '@/Components/Pagination';
 import SearchFilter from '@/Components/SearchFilter';
 import Badge from '@/Components/Badge';
 import ConfirmModal from '@/Components/ConfirmModal';
+import ImportModal from '@/Components/ImportModal';
 import { PageProps, Warehouse, PaginatedData } from '@/types';
 import { useTranslation } from '@/utils/translation';
 
@@ -19,6 +20,7 @@ export default function WarehouseIndex({ warehouses, filters }: Props) {
     const { t } = useTranslation();
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [showImport, setShowImport] = useState(false);
 
     const handleDelete = () => {
         if (!deleteId) return;
@@ -55,10 +57,16 @@ export default function WarehouseIndex({ warehouses, filters }: Props) {
             <Head title={t('warehouses')} />
             <PageHeader title={t('warehouses')} breadcrumbs={[{ label: t('dashboard'), href: '/dashboard' }, { label: t('warehouses') }]}
                 actions={
-                    <Link href="/warehouses/create" className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600">
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                        {t('add_warehouse')}
-                    </Link>
+                    <>
+                        <button onClick={() => setShowImport(true)} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3-3m0 0l3 3m-3-3v12" /></svg>
+                            {t('import')}
+                        </button>
+                        <Link href="/warehouses/create" className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                            {t('add_warehouse')}
+                        </Link>
+                    </>
                 }
             />
             <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -76,6 +84,14 @@ export default function WarehouseIndex({ warehouses, filters }: Props) {
                 title={t('delete_warehouse')}
                 confirmLabel={t('delete')}
                 processing={deleting}
+            />
+
+            <ImportModal
+                show={showImport}
+                onClose={() => setShowImport(false)}
+                importUrl="/import/warehouses"
+                templateUrl="/import/warehouses/template"
+                title={t('import_warehouses')}
             />
         </AuthenticatedLayout>
     );

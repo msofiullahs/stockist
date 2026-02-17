@@ -12,12 +12,19 @@ import { PageProps } from '@/types';
 export function useTranslation() {
     const { translations } = usePage<PageProps>().props;
 
-    const t = (key: string, fallback?: string): string => {
-        if (translations && translations[key]) {
-            return translations[key];
+    const t = (key: string, params?: Record<string, string | number>, fallback?: string): string => {
+        let text = (translations && translations[key])
+            ? translations[key]
+            : (fallback ?? key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
+
+        // Replace :param placeholders with actual values
+        if (params) {
+            Object.entries(params).forEach(([param, value]) => {
+                text = text.replace(new RegExp(`:${param}`, 'g'), String(value));
+            });
         }
-        // If no translation found, use fallback or convert key to readable text
-        return fallback ?? key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+        return text;
     };
 
     return { t };

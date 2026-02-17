@@ -43,8 +43,17 @@ export default function FlashMessage({ type, message }: FlashMessageProps) {
         ),
     };
 
-    // Translate the message key; if no translation found, t() auto-formats it
-    const translatedMessage = t(message);
+    // Parse messages with parameters (format: "key:param1:param2")
+    // e.g., "flash_import_success:5:2" → t('flash_import_success', { imported: '5', skipped: '2' })
+    const parseMessage = (msg: string): string => {
+        if (msg.startsWith('flash_import_success:')) {
+            const parts = msg.split(':');
+            return t('flash_import_success', { imported: parts[1] || '0', skipped: parts[2] || '0' });
+        }
+        return t(msg);
+    };
+
+    const translatedMessage = parseMessage(message);
 
     return createPortal(
         <div

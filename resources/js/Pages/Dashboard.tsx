@@ -4,7 +4,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageHeader from '@/Components/PageHeader';
 import StatsCard from '@/Components/StatsCard';
 import Badge from '@/Components/Badge';
-import { DashboardStats, Product, StockMovement, PageProps } from '@/types';
+import { DashboardStats, Product, StockMovement, StorageUsage, PageProps } from '@/types';
 import { useTranslation } from '@/utils/translation';
 
 const Chart = lazy(() => import('react-apexcharts'));
@@ -14,6 +14,14 @@ interface Props {
     lowStockProducts: Product[];
     recentMovements: StockMovement[];
     monthlyMovements?: { month: string; in: number; out: number }[];
+    storageUsage?: StorageUsage;
+}
+
+function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + ' ' + units[i];
 }
 
 export default function Dashboard({
@@ -21,6 +29,7 @@ export default function Dashboard({
     lowStockProducts = [],
     recentMovements = [],
     monthlyMovements = [],
+    storageUsage,
 }: Props) {
     const { t } = useTranslation();
     const { settings } = usePage<PageProps>().props;
@@ -48,6 +57,45 @@ export default function Dashboard({
         { name: t('stock_in'), data: monthlyMovements.map((m) => m.in) },
         { name: t('stock_out'), data: monthlyMovements.map((m) => m.out) },
     ];
+
+    const storagePercentage = storageUsage?.percentage ?? 0;
+    const storageColor = storagePercentage >= 90 ? '#EF4444' : storagePercentage >= 70 ? '#F59E0B' : '#3366FF';
+
+    const storageChartOptions: ApexCharts.ApexOptions = {
+        chart: { type: 'radialBar', background: 'transparent' },
+        plotOptions: {
+            radialBar: {
+                startAngle: -135,
+                endAngle: 135,
+                hollow: { size: '65%' },
+                track: {
+                    background: isDark ? '#374151' : '#e5e7eb',
+                    strokeWidth: '100%',
+                },
+                dataLabels: {
+                    name: {
+                        show: true,
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        color: isDark ? '#9ca3af' : '#6b7280',
+                        offsetY: -10,
+                    },
+                    value: {
+                        show: true,
+                        fontSize: '28px',
+                        fontWeight: '700',
+                        color: isDark ? '#f3f4f6' : '#111827',
+                        offsetY: 4,
+                        formatter: (val: number) => `${val}%`,
+                    },
+                },
+            },
+        },
+        fill: { colors: [storageColor] },
+        stroke: { lineCap: 'round' },
+        labels: [t('used')],
+        theme: { mode: isDark ? 'dark' : 'light' },
+    };
 
     return (
         <AuthenticatedLayout>
@@ -113,9 +161,9 @@ export default function Dashboard({
                 />
             </div>
 
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                 {/* Movement Chart */}
-                <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+                <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800 xl:col-span-2">
                     <h3 className="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">{t('stock_movement_overview')}</h3>
                     {monthlyMovements.length > 0 ? (
                         <Suspense fallback={<div className="flex h-64 items-center justify-center text-sm text-gray-400 dark:text-gray-500">{t('loading_chart')}</div>}>
@@ -133,8 +181,43 @@ export default function Dashboard({
                     )}
                 </div>
 
+                {/* Storage Usage */}
+                {storageUsage && (
+                    <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+                        <h3 className="mb-2 text-base font-semibold text-gray-900 dark:text-gray-100">{t('storage_usage')}</h3>
+                        <Suspense fallback={<div className="flex h-48 items-center justify-center text-sm text-gray-400 dark:text-gray-500">{t('loading_chart')}</div>}>
+                            <Chart
+                                options={storageChartOptions}
+                                series={[storagePercentage]}
+                                type="radialBar"
+                                height={220}
+                            />
+                        </Suspense>
+                        <div className="space-y-2 px-1">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-500 dark:text-gray-400">{t('application')}</span>
+                                <span className="font-medium text-gray-800 dark:text-gray-200">{formatBytes(storageUsage.app_size)}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-500 dark:text-gray-400">{t('database')}</span>
+                                <span className="font-medium text-gray-800 dark:text-gray-200">{formatBytes(storageUsage.db_size)}</span>
+                            </div>
+                            <div className="border-t border-gray-200 pt-2 dark:border-gray-700">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="font-medium text-gray-700 dark:text-gray-300">{t('total_used')}</span>
+                                    <span className="font-semibold text-gray-900 dark:text-gray-100">{formatBytes(storageUsage.total_used)}</span>
+                                </div>
+                                <div className="mt-1 flex items-center justify-between text-sm">
+                                    <span className="font-medium text-gray-700 dark:text-gray-300">{t('capacity')}</span>
+                                    <span className="font-semibold text-gray-900 dark:text-gray-100">{formatBytes(storageUsage.capacity)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Low Stock Alerts */}
-                <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+                <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800 xl:col-span-3">
                     <div className="mb-4 flex items-center justify-between">
                         <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{t('low_stock_alerts')}</h3>
                         <Link

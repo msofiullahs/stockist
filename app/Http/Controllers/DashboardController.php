@@ -9,10 +9,61 @@ use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\Warehouse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
+    private function getDirectorySize(string $path): int
+    {
+        $size = 0;
+        if (!is_dir($path)) return $size;
+
+        foreach (File::allFiles($path) as $file) {
+            $size += $file->getSize();
+        }
+
+        return $size;
+    }
+
+    private function getDatabaseSize(): int
+    {
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'sqlite') {
+            $path = DB::connection()->getDatabaseName();
+            return file_exists($path) ? filesize($path) : 0;
+        }
+
+        // MySQL / MariaDB
+        $dbName = DB::connection()->getDatabaseName();
+        $result = DB::select("SELECT SUM(data_length + index_length) as size FROM information_schema.tables WHERE table_schema = ?", [$dbName]);
+
+        return (int) ($result[0]->size ?? 0);
+    }
+
+    private function getStorageUsage(): array
+    {
+        $appSize = $this->getDirectorySize(storage_path('app'));
+        $dbSize = $this->getDatabaseSize();
+        $totalUsed = $appSize + $dbSize;
+
+        // STORAGE_CAPACITY from .env in MB
+        $capacityMb = (int) env('STORAGE_CAPACITY', 5000);
+        $capacityBytes = $capacityMb * 1024 * 1024;
+
+        $percentage = $capacityBytes > 0 ? round(($totalUsed / $capacityBytes) * 100, 1) : 0;
+
+        return [
+            'app_size' => $appSize,
+            'db_size' => $dbSize,
+            'total_used' => $totalUsed,
+            'capacity' => $capacityBytes,
+            'capacity_mb' => $capacityMb,
+            'percentage' => min($percentage, 100),
+        ];
+    }
+
     public function index()
     {
         // Count low stock products
@@ -101,12 +152,16 @@ class DashboardController extends Controller
             'out' => (int) $item->stock_out,
         ]);
 
+        // Storage usage
+        $storageUsage = $this->getStorageUsage();
+
         return Inertia::render('Dashboard', [
             'stats' => $stats,
             'lowStockProducts' => $lowStockProducts,
             'monthlyMovements' => $monthlyMovements,
             'topProducts' => $topProducts,
             'recentMovements' => $recentMovements,
+            'storageUsage' => $storageUsage,
         ]);
     }
 }

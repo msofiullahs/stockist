@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Product;
+use App\Models\Setting;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -16,7 +17,13 @@ class LowStockNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ["mail", "database"];
+        $channels = ['database'];
+
+        if (Setting::get('mail_enabled', '0') === '1') {
+            $channels[] = 'mail';
+        }
+
+        return $channels;
     }
 
     public function toMail(object $notifiable): MailMessage
