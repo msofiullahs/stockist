@@ -30,7 +30,7 @@ A stock management application built with Laravel 12, Inertia.js v2, React 19, T
 ### 1. Clone and install dependencies
 
 ```bash
-git clone <repository-url> stockist
+git clone git@github.com:msofiullahs/stockist.git stockist
 cd stockist
 composer install
 npm install
