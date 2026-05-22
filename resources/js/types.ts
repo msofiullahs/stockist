@@ -164,6 +164,9 @@ export interface DashboardStats {
     totalWarehouses: number;
     pendingOrders: number;
     lowStockCount: number;
+    inventoryValue: number;
+    retailValue: number;
+    totalUnits: number;
 }
 
 export interface StorageUsage {

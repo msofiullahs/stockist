@@ -107,6 +107,15 @@ class DashboardController extends Controller
             ->filter(fn ($product) => $product->isLowStock())
             ->count();
 
+        // Inventory valuation: sum of (stock qty * cost_price) and (stock qty * selling_price)
+        $valuation = DB::table('warehouse_stocks')
+            ->join('products', 'products.id', '=', 'warehouse_stocks.product_id')
+            ->whereNull('products.deleted_at')
+            ->selectRaw('COALESCE(SUM(warehouse_stocks.quantity * products.cost_price), 0) as cost_value')
+            ->selectRaw('COALESCE(SUM(warehouse_stocks.quantity * products.selling_price), 0) as retail_value')
+            ->selectRaw('COALESCE(SUM(warehouse_stocks.quantity), 0) as total_units')
+            ->first();
+
         $stats = [
             'totalProducts' => Product::count(),
             'totalCategories' => Category::count(),
@@ -114,6 +123,9 @@ class DashboardController extends Controller
             'totalWarehouses' => Warehouse::count(),
             'pendingOrders' => PurchaseOrder::where('status', 'pending')->count(),
             'lowStockCount' => $lowStockCount,
+            'inventoryValue' => round((float) ($valuation->cost_value ?? 0), 2),
+            'retailValue' => round((float) ($valuation->retail_value ?? 0), 2),
+            'totalUnits' => (int) ($valuation->total_units ?? 0),
         ];
 
         // Low stock products
